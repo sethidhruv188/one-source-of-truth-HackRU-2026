@@ -107,15 +107,31 @@ def build_crosswalk(edc, ctms, irt, finance):
 
     crosswalk = pd.DataFrame(rows)
 
-    # Confirmed human decisions override everything and survive a rebuild.
+    # Human decisions override everything and survive a rebuild.
+    #
+    # crosswalk_confirmed.csv is an append-only audit log: every decision ever
+    # made, with who made it and when. Only the LAST decision for a given
+    # identifier is applied, so a revert restores the machine's own judgement
+    # without erasing the history of what was decided before it.
     if os.path.exists(f"{OUT}/crosswalk_confirmed.csv"):
-        confirmed = pd.read_csv(f"{OUT}/crosswalk_confirmed.csv", dtype=str)
-        for r in confirmed.itertuples():
+        log = pd.read_csv(f"{OUT}/crosswalk_confirmed.csv", dtype=str).fillna("")
+        if "decision" not in log.columns:
+            log["decision"] = "confirm"
+        latest = log.drop_duplicates(subset=["system", "source_value"], keep="last")
+
+        for r in latest.itertuples():
             mask = ((crosswalk.system == r.system) &
                     (crosswalk.source_value == r.source_value))
-            crosswalk.loc[mask, "canonical_site"] = r.canonical_site
-            crosswalk.loc[mask, "status"] = "human_confirmed"
-            crosswalk.loc[mask, "method"] = "human_confirmed"
+            if r.decision == "revert":
+                continue                      # fall back to the automatic result
+            if r.decision == "reject":
+                crosswalk.loc[mask, "canonical_site"] = None
+                crosswalk.loc[mask, "status"] = "human_rejected"
+                crosswalk.loc[mask, "method"] = "human_rejected"
+            else:
+                crosswalk.loc[mask, "canonical_site"] = r.canonical_site
+                crosswalk.loc[mask, "status"] = "human_confirmed"
+                crosswalk.loc[mask, "method"] = "human_confirmed"
 
     return crosswalk
 

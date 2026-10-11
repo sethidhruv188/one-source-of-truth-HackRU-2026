@@ -64,6 +64,16 @@ def current_role(x_role: str = Header(None)) -> str:
     return x_role
 
 
+def actor(x_user: str, role: str) -> str:
+    """
+    Who to record against a decision. The person first, their role in brackets,
+    so an audit trail shows accountability rather than just authority:
+        "Fiona Reyes (Finance Analyst)"
+    """
+    name = (x_user or "").strip()
+    return f"{name} ({role})" if name else role
+
+
 def records(df):
     """DataFrame -> JSON-safe list of dicts. NaN/NaT become null."""
     if df is None or len(df) == 0:
@@ -211,7 +221,7 @@ def review(role: str = Header(None, alias="X-Role")):
     current_role(role)
     return {"stats": svc.matching_stats(),
             "pending": records(svc.review_queue()),
-            "decisions": records(repo.decisions())}
+            "decisions": records(svc.decision_log())}
 
 
 class Decision(BaseModel):
@@ -222,14 +232,34 @@ class Decision(BaseModel):
 
 
 @app.post("/api/review/decide")
-def decide(body: Decision, role: str = Header(None, alias="X-Role")):
+def decide(body: Decision,
+           role: str = Header(None, alias="X-Role"),
+           user: str = Header(None, alias="X-User")):
     r = current_role(role)
     if body.decision not in ("confirm", "reject"):
         raise HTTPException(400, "decision must be 'confirm' or 'reject'")
     svc.decide(body.system, body.source_value, body.canonical_site,
-               body.decision, r)
+               body.decision, actor(user, r))
     return {"ok": True, "stats": svc.matching_stats(),
-            "pending": records(svc.review_queue())}
+            "pending": records(svc.review_queue()),
+            "decisions": records(svc.decision_log())}
+
+
+class Revert(BaseModel):
+    system: str
+    source_value: str
+
+
+@app.post("/api/review/revert")
+def revert(body: Revert,
+           role: str = Header(None, alias="X-Role"),
+           user: str = Header(None, alias="X-User")):
+    """Undo a decision. The original entry stays in the audit log."""
+    r = current_role(role)
+    svc.revert(body.system, body.source_value, actor(user, r))
+    return {"ok": True, "stats": svc.matching_stats(),
+            "pending": records(svc.review_queue()),
+            "decisions": records(svc.decision_log())}
 
 
 # --- data quality ----------------------------------------------------------

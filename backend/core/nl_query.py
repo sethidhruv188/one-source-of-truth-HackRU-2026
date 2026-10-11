@@ -10,7 +10,10 @@ import os
 import re
 
 import duckdb
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
 from dotenv import load_dotenv
 
 from . import repository as repo, roles as roles_mod
@@ -65,7 +68,7 @@ A: SELECT site_id, site_name, (CASE WHEN kits_remaining < 10 THEN 1 ELSE 0 END) 
 
 
 def available() -> bool:
-    return bool(_key)
+    return bool(_key) and genai is not None
 
 
 def _schema(role_name: str) -> str:

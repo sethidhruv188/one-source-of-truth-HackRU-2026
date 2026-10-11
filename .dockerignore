@@ -1,0 +1,11 @@
+.venv/
+.venv-1/
+__pycache__/
+*.pyc
+.git/
+.env
+web/node_modules/
+web/dist/
+database/cdisc/
+database/processed/
+*.zip

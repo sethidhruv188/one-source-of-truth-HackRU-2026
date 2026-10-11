@@ -2,11 +2,11 @@
 
 const BASE = import.meta.env.VITE_API_URL || "";
 
-function role() {
+function session() {
   try {
-    return JSON.parse(sessionStorage.getItem("ost.user") || "{}").role || "";
+    return JSON.parse(sessionStorage.getItem("ost.user") || "{}");
   } catch {
-    return "";
+    return {};
   }
 }
 
@@ -15,7 +15,8 @@ async function request(path, options = {}) {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      "X-Role": role(),
+      "X-Role": session().role || "",
+      "X-User": session().name || session().username || "",
       ...(options.headers || {}),
     },
   });
@@ -40,6 +41,11 @@ export const api = {
   review:      () => request("/review"),
   decide:      (payload) =>
                  request("/review/decide", { method: "POST", body: JSON.stringify(payload) }),
+  revert:      (system, source_value) =>
+                 request("/review/revert", {
+                   method: "POST",
+                   body: JSON.stringify({ system, source_value }),
+                 }),
   quality:     () => request("/quality"),
   graphStats:  () => request("/graph/stats"),
   graphSite:   (siteId) => request(`/graph/site/${siteId}`),

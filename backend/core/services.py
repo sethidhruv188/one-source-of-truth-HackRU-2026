@@ -192,6 +192,31 @@ def decide(system, source_value, canonical_site, decision, decided_by):
     rebuild()
 
 
+def revert(system, source_value, decided_by):
+    """
+    Undo a decision without deleting it. Appends a revert entry to the audit
+    log; harmonisation then falls back to the automatic match, and the earlier
+    decision stays on the record.
+    """
+    repo.append_decision(system, source_value, "", "revert", decided_by)
+    rebuild()
+
+
+def decision_log() -> pd.DataFrame:
+    """The audit trail, newest first, with the entries currently in effect marked."""
+    log = repo.decisions()
+    if log.empty:
+        return log
+    log = log.copy()
+    if "decision" not in log.columns:
+        log["decision"] = "confirm"
+    in_effect = (log.drop_duplicates(subset=["system", "source_value"], keep="last")
+                    .index)
+    log["in_effect"] = log.index.isin(in_effect) & (log["decision"] != "revert")
+    log["revertable"] = log.index.isin(in_effect) & (log["decision"] != "revert")
+    return log.iloc[::-1].reset_index(drop=True)
+
+
 def rebuild():
     for module in ("backend.pipeline.harmonize", "backend.pipeline.graph_builder"):
         subprocess.run([sys.executable, "-m", module],
@@ -283,16 +308,3 @@ def source_to_concept_map() -> pd.DataFrame:
         "confidence": cw.confidence,
         "status": cw.status,
     })
-
-def ask_freeform(question: str, role_name: str) -> dict:
-    """Natural-language question. Role filtering still applies on the way out."""
-    from . import nl_query
-    res = nl_query.ask(question, role_name)
-    if "rows" in res and res["rows"] is not None:
-        res["rows"], res["withheld_columns"] = _enforce(res["rows"], role_name)
-    return res
-
-
-def nl_available() -> bool:
-    from . import nl_query
-    return nl_query.available()
