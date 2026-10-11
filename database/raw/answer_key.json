@@ -1,0 +1,60 @@
+{
+  "base_data_source": "CDISC SDTM/ADaM pilot project (study CDISCPILOT01)",
+  "total_planted_defects": 9,
+  "defects": [
+    {
+      "type": "impossible_date",
+      "feed": "edc_patients.csv",
+      "key": "01-704-1323",
+      "detail": "enrollment date after study end date"
+    },
+    {
+      "type": "impossible_date",
+      "feed": "edc_patients.csv",
+      "key": "01-703-1175",
+      "detail": "enrollment date after study end date"
+    },
+    {
+      "type": "impossible_date",
+      "feed": "edc_patients.csv",
+      "key": "01-703-1439",
+      "detail": "enrollment date after study end date"
+    },
+    {
+      "type": "duplicate_record",
+      "feed": "ctms_sites.csv",
+      "key": "714",
+      "detail": "site appears twice in CTMS export"
+    },
+    {
+      "type": "duplicate_record",
+      "feed": "ctms_sites.csv",
+      "key": "705",
+      "detail": "site appears twice in CTMS export"
+    },
+    {
+      "type": "orphan_record",
+      "feed": "irt_supply.csv",
+      "key": "S799",
+      "detail": "site exists in IRT but in no other system"
+    },
+    {
+      "type": "orphan_record",
+      "feed": "irt_supply.csv",
+      "key": "S801",
+      "detail": "site exists in IRT but in no other system"
+    },
+    {
+      "type": "name_variant",
+      "feed": "finance_payments.csv",
+      "key": "\"AHEPA\" General University Hosp. of Thessaloniki",
+      "detail": "same site as '\"AHEPA\" General University Hospital of Thessaloniki', written differently"
+    },
+    {
+      "type": "stale_feed",
+      "feed": "finance_payments.csv",
+      "key": "finance_payments.csv",
+      "detail": "feed has not refreshed in 9 days"
+    }
+  ]
+}

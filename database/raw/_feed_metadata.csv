@@ -1,0 +1,7 @@
+feed,system,loaded_at
+edc_patients.csv,EDC,2026-10-11T09:00:00
+edc_adverse_events.csv,EDC,2026-10-11T09:00:00
+ctms_sites.csv,CTMS,2026-10-11T03:00:00
+irt_supply.csv,IRT,2026-10-10T09:00:00
+safety_cases.csv,Safety,2026-10-11T06:00:00
+finance_payments.csv,Finance,2026-10-02T09:00:00

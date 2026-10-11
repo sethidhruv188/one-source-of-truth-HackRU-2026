@@ -1,0 +1,18 @@
+hospital,invoice_amount_usd,invoice_date,days_payment_overdue
+"""AHEPA"" General University Hosp. of Thessaloniki",55091.32,07-09-2026,91
+Aristotle University of Thessaloniki,34545.51,07-04-2026,0
+Azienda Ospedaliero Universitaria Careggi Firenze,44454.61,07-11-2026,67
+Barrow Neurological Institute,115425.44,07-25-2026,67
+"Barrow Neurological Institute, Division of Alzheimer's Disease",115342.15,07-30-2026,28
+Box Hill Hospital,175372.54,08-25-2026,0
+Butler Hospital Memory and Aging Program,128845.35,07-08-2026,28
+CH Arras,142975.8,07-22-2026,0
+CH Beauvais,66960.02,07-11-2026,91
+CH Béthune,20519.25,08-16-2026,28
+CH Calais,175502.1,08-18-2026,0
+CH Dunkerque,101229.07,07-07-2026,28
+CH Le Quesnoy,154667.1,08-02-2026,12
+CH Lens,44454.28,08-18-2026,0
+CH Roubaix,106300.64,08-19-2026,0
+CH Saint Quentin,115831.13,08-01-2026,0
+CH Seclin,37898.84,07-24-2026,28
