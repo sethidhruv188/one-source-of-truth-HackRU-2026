@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api } from "../lib/api";
-import { Panel, Stat, Spinner, Badge, Notice, Table } from "../components/ui";
+import { Panel, Stat, Spinner, Notice, Table } from "../components/ui";
 
 const COLOUR = { Site: "#4a8fe7", Alias: "#c99a3c", Patient: "#3fa776", Record: "#5b6775" };
 const SIZE   = { Site: 11, Alias: 6, Patient: 4, Record: 2.6 };
@@ -13,74 +13,106 @@ function Canvas({ data, onHover }) {
 
   useEffect(() => {
     const W = 1100, H = 520;
+
     const nodes = data.nodes.map((n, i) => ({
       ...n,
       x: W / 2 + Math.cos((i / data.nodes.length) * 6.283) * 200 + Math.random() * 20,
       y: H / 2 + Math.sin((i / data.nodes.length) * 6.283) * 200 + Math.random() * 20,
-      vx: 0, vy: 0,
+      vx: 0,
+      vy: 0,
     }));
+
     const index = new Map(nodes.map((n) => [n.id, n]));
     const links = data.links
       .map((l) => ({ s: index.get(l.source), t: index.get(l.target), kind: l.kind }))
       .filter((l) => l.s && l.t);
+
     state.current = { nodes, links };
 
     const canvas = ref.current;
     const ctx = canvas.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = W * dpr; canvas.height = H * dpr;
-    canvas.style.width = "100%"; canvas.style.height = `${H}px`;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = "100%";
+    canvas.style.height = `${H}px`;
     ctx.scale(dpr, dpr);
 
-    let frame, alpha = 1;
+    let frame;
+    let alpha = 1;
+
     function tick() {
       alpha *= 0.985;
+
       // repulsion
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const a = nodes[i], b = nodes[j];
-          let dx = b.x - a.x, dy = b.y - a.y;
-          let d2 = dx * dx + dy * dy || 1;
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const d2 = dx * dx + dy * dy || 1;
           if (d2 > 42000) continue;
           const f = (900 * alpha) / d2;
           const d = Math.sqrt(d2);
-          a.vx -= (dx / d) * f; a.vy -= (dy / d) * f;
-          b.vx += (dx / d) * f; b.vy += (dy / d) * f;
+          a.vx -= (dx / d) * f;
+          a.vy -= (dy / d) * f;
+          b.vx += (dx / d) * f;
+          b.vy += (dy / d) * f;
         }
       }
+
       // springs
       for (const l of links) {
         const dx = l.t.x - l.s.x, dy = l.t.y - l.s.y;
         const d = Math.hypot(dx, dy) || 1;
-        const f = ((d - (l.kind === "alias_of" ? 70 : 42)) * 0.012 * alpha);
-        l.s.vx += (dx / d) * f; l.s.vy += (dy / d) * f;
-        l.t.vx -= (dx / d) * f; l.t.vy -= (dy / d) * f;
+        const f = (d - (l.kind === "alias_of" ? 70 : 42)) * 0.012 * alpha;
+        l.s.vx += (dx / d) * f;
+        l.s.vy += (dy / d) * f;
+        l.t.vx -= (dx / d) * f;
+        l.t.vy -= (dy / d) * f;
       }
+
+      // centering — scaled by alpha so it fades with everything else,
+      // otherwise the layout keeps collapsing inward after repulsion dies
       for (const n of nodes) {
-        if (n.kind === "Site") { n.vx += (W / 2 - n.x) * 0.02; n.vy += (H / 2 - n.y) * 0.02; }
-        n.vx += (W / 2 - n.x) * 0.0012; n.vy += (H / 2 - n.y) * 0.0012;
-        n.x += (n.vx *= 0.82); n.y += (n.vy *= 0.82);
+        if (n.kind === "Site") {
+          n.vx += (W / 2 - n.x) * 0.02 * alpha;
+          n.vy += (H / 2 - n.y) * 0.02 * alpha;
+        }
+        n.vx += (W / 2 - n.x) * 0.0012 * alpha;
+        n.vy += (H / 2 - n.y) * 0.0012 * alpha;
+        n.x += (n.vx *= 0.82);
+        n.y += (n.vy *= 0.82);
         n.x = Math.max(16, Math.min(W - 16, n.x));
         n.y = Math.max(16, Math.min(H - 16, n.y));
       }
 
       ctx.clearRect(0, 0, W, H);
+
       for (const l of links) {
         ctx.strokeStyle = l.kind === "alias_of" ? "rgba(201,154,60,.55)" : "rgba(43,51,62,.9)";
         ctx.lineWidth = l.kind === "alias_of" ? 1.4 : 0.7;
-        ctx.beginPath(); ctx.moveTo(l.s.x, l.s.y); ctx.lineTo(l.t.x, l.t.y); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(l.s.x, l.s.y);
+        ctx.lineTo(l.t.x, l.t.y);
+        ctx.stroke();
       }
+
       for (const n of nodes) {
         ctx.fillStyle = COLOUR[n.kind] || "#666";
-        ctx.beginPath(); ctx.arc(n.x, n.y, SIZE[n.kind] || 3, 0, 6.283); ctx.fill();
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, SIZE[n.kind] || 3, 0, 6.283);
+        ctx.fill();
         if (n.kind === "Site" || n.kind === "Alias") {
           ctx.fillStyle = n.kind === "Site" ? "#e8ecf1" : "#aeb8c4";
           ctx.font = `${n.kind === "Site" ? 600 : 400} ${n.kind === "Site" ? 12 : 10}px Inter, sans-serif`;
           ctx.fillText(String(n.label).slice(0, 26), n.x + SIZE[n.kind] + 5, n.y + 3.5);
         }
       }
-      frame = requestAnimationFrame(tick);
+
+      // stop once settled — keeps the layout still and frees the CPU
+      if (alpha > 0.015) frame = requestAnimationFrame(tick);
     }
+
     tick();
     return () => cancelAnimationFrame(frame);
   }, [data]);
@@ -97,8 +129,14 @@ function Canvas({ data, onHover }) {
     onHover(best);
   }
 
-  return <canvas ref={ref} onMouseMove={move} onMouseLeave={() => onHover(null)}
-                 className="rounded-md bg-ink-900 border border-line cursor-crosshair" />;
+  return (
+    <canvas
+      ref={ref}
+      onMouseMove={move}
+      onMouseLeave={() => onHover(null)}
+      className="rounded-md bg-ink-900 border border-line cursor-crosshair"
+    />
+  );
 }
 
 export default function Graph() {
@@ -111,7 +149,7 @@ export default function Graph() {
   const [err, setErr] = useState("");
 
   useEffect(() => {
-    api.graphStats().then(setStats);
+    api.graphStats().then(setStats).catch(() => {});
     api.sites().then((s) => {
       setSites(s.rows);
       if (!site && s.rows.length) setSite(String(s.rows[0].site_id));
@@ -120,13 +158,16 @@ export default function Graph() {
 
   useEffect(() => {
     if (!site) return;
-    setData(null); setErr("");
+    setData(null);
+    setErr("");
     setParams({ site }, { replace: true });
     api.graphSite(site).then(setData).catch((e) => setErr(e.message));
   }, [site]);
 
   const aliases = useMemo(
-    () => data?.nodes.filter((n) => n.kind === "Alias") ?? [], [data]);
+    () => data?.nodes.filter((n) => n.kind === "Alias") ?? [],
+    [data]
+  );
 
   return (
     <div className="space-y-6">
@@ -140,7 +181,9 @@ export default function Graph() {
         </div>
         <select className="input w-auto" value={site} onChange={(e) => setSite(e.target.value)}>
           {sites.map((s) => (
-            <option key={s.site_id} value={s.site_id}>{s.site_id} — {s.site_name}</option>
+            <option key={s.site_id} value={s.site_id}>
+              {s.site_id} — {s.site_name}
+            </option>
           ))}
         </select>
       </header>
@@ -157,17 +200,23 @@ export default function Graph() {
 
       {err && <Notice tone="bad">{err}</Notice>}
 
-      <Panel title="Neighbourhood"
-             subtitle="One site, the identifiers every system uses for it, its patients, and the source rows behind them."
-             right={
-               <div className="flex gap-3 text-[11px] text-mist-500">
-                 {Object.entries(COLOUR).map(([k, c]) => (
-                   <span key={k} className="flex items-center gap-1.5">
-                     <span className="h-2 w-2 rounded-full" style={{ background: c }} />{k}
-                   </span>
-                 ))}
-               </div>}>
-        {!data ? <Spinner label="Building layout" /> : (
+      <Panel
+        title="Neighbourhood"
+        subtitle="One site, the identifiers every system uses for it, its patients, and the source rows behind them."
+        right={
+          <div className="flex gap-3 text-[11px] text-mist-500">
+            {Object.entries(COLOUR).map(([k, c]) => (
+              <span key={k} className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full" style={{ background: c }} />
+                {k}
+              </span>
+            ))}
+          </div>
+        }
+      >
+        {!data ? (
+          <Spinner label="Building layout" />
+        ) : (
           <div className="relative">
             <Canvas data={data} onHover={setHover} />
             {hover && (
@@ -195,9 +244,14 @@ export default function Graph() {
 
       {aliases.length > 0 && (
         <Panel title={`This one site is known by ${aliases.length} identifiers`}>
-          <Table dense rows={aliases.map((a) => ({
-            system: a.system, identifier: a.label, confidence: a.confidence,
-          }))} />
+          <Table
+            dense
+            rows={aliases.map((a) => ({
+              system: a.system,
+              identifier: a.label,
+              confidence: a.confidence,
+            }))}
+          />
         </Panel>
       )}
     </div>

@@ -10,6 +10,7 @@ Docs: http://localhost:8000/docs
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -23,9 +24,11 @@ from backend.core import repository as repo, roles as roles_mod, services as svc
 
 app = FastAPI(title="One Source of Truth API", version="1.0")
 
+ALLOWED = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[o.strip() for o in ALLOWED.split(",") if o.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -36,11 +39,13 @@ app.add_middleware(
 # Auth — demo accounts, one per role
 # ---------------------------------------------------------------------------
 
+# Keys MUST be lowercase — the lookup lowercases whatever is typed.
+# "role" MUST match a key in backend/core/roles.py exactly.
 USERS = {
-    "dhruv":  {"password": "demo", "name": "Dhruv Sethi",   "role": "Study Manager"},
-    "fiona":  {"password": "demo", "name": "Fiona Reyes",   "role": "Finance Analyst"},
+    "admin":  {"password": "demo", "name": "Admin",           "role": "Study Manager"},
+    "fiona":  {"password": "demo", "name": "Fiona Reyes",     "role": "Finance Analyst"},
     "marcus": {"password": "demo", "name": "Marcus Oyelaran", "role": "Site Monitor"},
-    "sana":   {"password": "demo", "name": "Sana Qureshi",  "role": "Data Steward"},
+    "sana":   {"password": "demo", "name": "Sana Qureshi",    "role": "Data Steward"},
 }
 
 
@@ -78,6 +83,10 @@ def login(body: Login):
     user = USERS.get(body.username.lower())
     if not user or user["password"] != body.password:
         raise HTTPException(401, "Invalid username or password")
+    # Fail loudly on a misconfigured role rather than silently falling back
+    # to the default, which would show one role while enforcing another.
+    if user["role"] not in roles_mod.ROLES:
+        raise HTTPException(500, f"Unknown role configured: {user['role']}")
     role = roles_mod.get(user["role"])
     return {"username": body.username.lower(), "name": user["name"],
             "role": role.name, "description": role.description,
@@ -271,3 +280,25 @@ def graph_site(site_id: str, limit: int = 60):
     links = [{"source": a, "target": b, "kind": d.get("kind", "")}
              for a, b, d in sub.edges(data=True)]
     return {"nodes": nodes, "links": links}
+
+
+# ---------------------------------------------------------------------------
+# Static frontend — served by the same service in production, so there is no
+# cross-origin request at all. In development Vite proxies /api here instead.
+# ---------------------------------------------------------------------------
+
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+DIST = Path(__file__).resolve().parent / "web" / "dist"
+
+if DIST.exists():
+    app.mount("/assets", StaticFiles(directory=DIST / "assets"), name="assets")
+
+    @app.get("/{full_path:path}")
+    def spa(full_path: str):
+        """Any non-API path returns index.html so client-side routing works."""
+        candidate = DIST / full_path
+        if full_path and candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(DIST / "index.html")

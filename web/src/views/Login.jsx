@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../lib/auth";
 
 const DEMO = [
-  { user: "dhruv",  role: "Study Manager",   note: "Full access to all five systems" },
+  { user: "admin",  role: "Study Manager",   note: "Full access to all five systems" },
   { user: "fiona",  role: "Finance Analyst", note: "No patient or safety data" },
   { user: "marcus", role: "Site Monitor",    note: "No financial data" },
   { user: "sana",   role: "Data Steward",    note: "Quality and identity matching" },
@@ -81,7 +81,7 @@ export default function Login() {
             <div>
               <label className="label block mb-2">Username</label>
               <input className="input" value={username} autoFocus autoComplete="username"
-                     onChange={(e) => setUsername(e.target.value)} placeholder="dhruv" />
+                     onChange={(e) => setUsername(e.target.value)} placeholder="admin" />
             </div>
             <div>
               <label className="label block mb-2">Password</label>
