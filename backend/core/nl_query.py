@@ -30,13 +30,17 @@ COLUMN_MEANINGS = {
     "country": "site country",
     "enrollment_target": "patients the site agreed to enrol",
     "enrolled_patients": "patients actually enrolled",
-    "open_safety_cases": "unresolved serious adverse event cases",
     "adverse_events": "total adverse events reported",
-    "kits_remaining": "study drug kits on hand (low = supply risk)",
     "kits_shipped": "study drug kits shipped to the site",
-    "invoice_amount_usd": "total invoiced to the site",
-    "days_payment_overdue": "days past the payment due date",
-    "systems_contributing": "how many of the 5 systems hold data for this site",
+    "invoice_amount_usd": ("total invoiced to the site in USD — use this for "
+                           "amount owed, outstanding, payable, money due, or "
+                           "how much we owe"),
+    "days_payment_overdue": ("days past the payment due date — use this for "
+                             "late, overdue, unpaid, behind on payments"),
+    "open_safety_cases": ("unresolved serious adverse event cases — use this for "
+                          "safety issues, safety problems, open cases"),
+    "kits_remaining": ("study drug kits on hand — use this for supply, stock, "
+                       "running out, low on drug"),
 }
 
 EXAMPLES = """
@@ -51,6 +55,9 @@ A: SELECT site_id, site_name, open_safety_cases, days_payment_overdue FROM site_
 
 Q: average kits left per country
 A: SELECT country, ROUND(AVG(kits_remaining),1) AS avg_kits FROM site_master GROUP BY country
+
+Q: how much do we owe each site?
+A: SELECT site_id, site_name, invoice_amount_usd, days_payment_overdue FROM site_master WHERE days_payment_overdue > 0 ORDER BY invoice_amount_usd DESC
 """
 
 
@@ -73,8 +80,10 @@ Columns available to this user:
 Rules:
 - Output ONLY the SQL. No markdown fences, no explanation.
 - SELECT statements only.
-- Use ONLY the columns listed above. If the question needs a column that is not
-  listed, output exactly: UNANSWERABLE
+- If the question needs a column that is not listed because this user lacks
+  permission, output exactly: DENIED
+- If the question is unclear, or asks for something no column can answer,
+  output exactly: UNANSWERABLE
 - Always include site_id and site_name unless the query aggregates them away.
 
 Examples:
@@ -127,10 +136,11 @@ def ask(question: str, role_name: str) -> dict:
     except Exception as e:
         return {"error": f"Model unavailable: {e}"}
 
+    if sql.upper().startswith("DENIED"):
+        return {"sql": None, "error": "That needs data this role isn't permitted to see."}
     if sql.upper().startswith("UNANSWERABLE"):
-        return {"sql": None,
-                "error": "That needs data this role isn't permitted to see, or a "
-                         "column that doesn't exist."}
+        return {"sql": None, "error": "I can't answer that from the available data. "
+                                      "Try naming a site, a system, or a metric."}
     if FORBIDDEN.search(sql) or not sql.lower().lstrip().startswith("select"):
         return {"sql": sql, "error": "Only SELECT queries are allowed."}
 
