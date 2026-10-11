@@ -1,7 +1,7 @@
 hospital,invoice_amount_usd,invoice_date,days_payment_overdue
-"""AHEPA"" General University Hosp. of Thessaloniki",55091.32,07-09-2026,91
-Aristotle University of Thessaloniki,34545.51,07-04-2026,0
-Azienda Ospedaliero Universitaria Careggi Firenze,44454.61,07-11-2026,67
+AHEPA Gen Univ Hosp of Thessal,55091.32,07-09-2026,91
+Aristotle Univ of Thessaloniki,34545.51,07-04-2026,0
+Azienda Ospedaliero Universita,44454.61,07-11-2026,67
 Barrow Neurological Institute,115425.44,07-25-2026,67
 "Barrow Neurological Institute, Division of Alzheimer's Disease",115342.15,07-30-2026,28
 Box Hill Hospital,175372.54,08-25-2026,0

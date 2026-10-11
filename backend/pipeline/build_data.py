@@ -207,20 +207,32 @@ def build_feeds(patients, events, defects):
         })
     finance = pd.DataFrame(fin_rows)
 
-    # DEFECT: three mangled hospital names (needs fuzzy matching)
-    manglers = [("Hospital", "Hosp."), ("General", "Gen."), ("Medical Center", "Med Ctr")]
-    used = set()
-    for a, b in manglers:
-        candidates = [i for i in finance.index
-                      if a in finance.loc[i, "hospital"] and i not in used]
-        if not candidates:
-            continue
-        idx = candidates[0]
-        used.add(idx)
+        # DEFECT: three mangled facility names (forces fuzzy matching + human review).
+    # Abbreviate common words and truncate, the way a legacy finance system with a
+    # short name field would. Works for long international names as well as short ones.
+    ABBREV = [("University", "Univ"), ("Hospital", "Hosp"), ("General", "Gen"),
+              ("Medical", "Med"), ("Center", "Ctr"), ("Centre", "Ctr"),
+              ("Institute", "Inst"), ("Regional", "Reg"), ("Clinical", "Clin"),
+              ("Research", "Res"), ("Health", "Hlth"), ("Memorial", "Mem")]
+
+    def mangle(name, limit=30):
+        s = name
+        for a, b in ABBREV:
+            s = s.replace(a, b)
+        return s.replace('"', "").strip()[:limit].strip()
+
+    changed = 0
+    for idx in finance.index:
+        if changed >= 3:
+            break
         original = finance.loc[idx, "hospital"]
-        finance.loc[idx, "hospital"] = original.replace(a, b)
+        variant = mangle(original)
+        if variant == original or len(variant) < 8:
+            continue
+        finance.loc[idx, "hospital"] = variant
+        changed += 1
         defects.append({"type": "name_variant", "feed": "finance_payments.csv",
-                        "key": finance.loc[idx, "hospital"],
+                        "key": variant,
                         "detail": f"same site as '{original}', written differently"})
 
     return edc, events, ctms, irt, safety, finance, names

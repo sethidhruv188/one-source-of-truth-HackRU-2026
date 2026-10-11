@@ -1,6 +1,6 @@
 {
   "base_data_source": "CDISC SDTM/ADaM pilot project (study CDISCPILOT01)",
-  "total_planted_defects": 9,
+  "total_planted_defects": 11,
   "defects": [
     {
       "type": "impossible_date",
@@ -47,8 +47,20 @@
     {
       "type": "name_variant",
       "feed": "finance_payments.csv",
-      "key": "\"AHEPA\" General University Hosp. of Thessaloniki",
+      "key": "AHEPA Gen Univ Hosp of Thessal",
       "detail": "same site as '\"AHEPA\" General University Hospital of Thessaloniki', written differently"
+    },
+    {
+      "type": "name_variant",
+      "feed": "finance_payments.csv",
+      "key": "Aristotle Univ of Thessaloniki",
+      "detail": "same site as 'Aristotle University of Thessaloniki', written differently"
+    },
+    {
+      "type": "name_variant",
+      "feed": "finance_payments.csv",
+      "key": "Azienda Ospedaliero Universita",
+      "detail": "same site as 'Azienda Ospedaliero Universitaria Careggi Firenze', written differently"
     },
     {
       "type": "stale_feed",

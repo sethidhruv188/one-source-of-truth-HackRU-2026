@@ -58,6 +58,9 @@ A: SELECT country, ROUND(AVG(kits_remaining),1) AS avg_kits FROM site_master GRO
 
 Q: how much do we owe each site?
 A: SELECT site_id, site_name, invoice_amount_usd, days_payment_overdue FROM site_master WHERE days_payment_overdue > 0 ORDER BY invoice_amount_usd DESC
+
+Q: rank sites by how many risk signals they trip
+A: SELECT site_id, site_name, (CASE WHEN kits_remaining < 10 THEN 1 ELSE 0 END) + (CASE WHEN open_safety_cases > 0 THEN 1 ELSE 0 END) + (CASE WHEN days_payment_overdue > 30 THEN 1 ELSE 0 END) AS risk_signals FROM site_master ORDER BY risk_signals DESC
 """
 
 
@@ -80,10 +83,11 @@ Columns available to this user:
 Rules:
 - Output ONLY the SQL. No markdown fences, no explanation.
 - SELECT statements only.
-- If the question needs a column that is not listed because this user lacks
-  permission, output exactly: DENIED
-- If the question is unclear, or asks for something no column can answer,
-  output exactly: UNANSWERABLE
+- Output DENIED only when the question clearly asks for patient, safety, or
+  financial data and that exact column is missing from the list above.
+- Output UNANSWERABLE for anything else you cannot express with the listed
+  columns, including vague terms like "over budget" or "data quality" that
+  no column measures.
 - Always include site_id and site_name unless the query aggregates them away.
 
 Examples:

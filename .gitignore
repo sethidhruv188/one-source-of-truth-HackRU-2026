@@ -9,3 +9,6 @@ graph_view.html
 .env
 .venv-1/
 graph_view.html
+web/node_modules/
+web/dist/
+.env
